@@ -23,7 +23,7 @@ class TestHashMapOpenAddressing {
   void setUp() {
     for (int i = 0; i < 9; i++) {
       map.put(i, i * 2);
-      expected.put(i, i * 3);
+      expected.put(i, i * 2);
     }
   }
 
@@ -82,7 +82,13 @@ class TestHashMapOpenAddressing {
 
   @Test
   void mapsNotEqualByEntries() {
+    expected.put(20, 100);
     assertThat(map, not(expected));
+  }
+
+  @Test
+  void mapsIsEqualByEntries() {
+    assertThat(map, is(expected));
   }
 
   @AfterAll
