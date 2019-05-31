@@ -36,7 +36,7 @@ class TestHashMapOpenAddressing {
   }
 
   @Test
-  void setMethodChangeValueAndReturnExpectedResult() {
+  void putMethodChangeValueBySameKeyAndReturnExpectedResult() {
     HashMapOpenAddressing m = new HashMapOpenAddressing();
     m.put(20, 20L);
     m.put(20, 30L);
