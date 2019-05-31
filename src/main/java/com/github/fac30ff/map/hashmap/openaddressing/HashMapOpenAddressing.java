@@ -1,5 +1,6 @@
 package com.github.fac30ff.map.hashmap.openaddressing;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 public class HashMapOpenAddressing {
@@ -45,7 +46,7 @@ public class HashMapOpenAddressing {
   }
 
   public void put(int key, long value) {
-    if (size > capacity / LOAD_FACTOR ) {
+    if (size > (int) (capacity * LOAD_FACTOR)) {
       rearrange(Math.round((1 + LOAD_FACTOR) * capacity));
     }
     add(key, value);
@@ -100,6 +101,23 @@ public class HashMapOpenAddressing {
 
   private int hash2(int key) {
     return primeFactor - hash(key) % primeFactor;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    HashMapOpenAddressing that = (HashMapOpenAddressing) o;
+    return Arrays.equals(table, that.table);
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(table);
   }
 
   static class Entry {
