@@ -3,6 +3,8 @@ package com.github.fac30ff.map.hashmap.openaddressing;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static com.github.fac30ff.map.hashmap.openaddressing.TypeOfOpenAddressing.DOUBLE_HASHING;
+
 public class HashMapOpenAddressing {
   private static final int INITIAL_CAPACITY = 16;
   private static final float LOAD_FACTOR = 0.75f;
@@ -10,18 +12,26 @@ public class HashMapOpenAddressing {
   private int primeFactor;
   private int capacity;
   private int size;
+  private final TypeOfOpenAddressing type;
   private Entry[] table;
 
   public HashMapOpenAddressing() {
-    capacity = INITIAL_CAPACITY;
-    table = new Entry[capacity];
-    primeFactor = PRIME;
+    this(INITIAL_CAPACITY);
   }
 
   public HashMapOpenAddressing(int capacity) {
+    this(capacity, DOUBLE_HASHING);
+  }
+
+  public HashMapOpenAddressing(int capacity, TypeOfOpenAddressing type) {
     this.capacity = capacity;
     table = new Entry[capacity];
-    primeFactor = getPrimeFactor();
+    this.type = type;
+    primeFactor = getPrimeFactor(capacity);
+  }
+
+  public HashMapOpenAddressing(TypeOfOpenAddressing type) {
+    this(INITIAL_CAPACITY, type);
   }
 
   public int size() {
@@ -29,6 +39,56 @@ public class HashMapOpenAddressing {
   }
 
   public Long get(int key) {
+    return get(key, this.type);
+  }
+
+  private Long get(int key, TypeOfOpenAddressing type) {
+    switch (type) {
+      case LINEAR_PROBING:
+        return getLinearProbing(key);
+      case QUADRATIC_PROBING:
+        return getQuadraticProbing(key);
+      case DOUBLE_HASHING:
+      default:
+        return getDoubleHashing(key);
+    }
+  }
+
+  private Long getQuadraticProbing(int key) {
+    int hash = hash(key);
+    while (table[hash] != null) {
+      if (table[hash].getKey() == key && table[hash].getHash() == hash) {
+        return table[hash].getValue();
+      }
+      if (hash == capacity - 1) {
+        hash = 0;
+      } else {
+        hash++;
+        hash %= capacity;
+      }
+    }
+    return null;
+  }
+
+  private Long getLinearProbing(int key) {
+    int hash = hash(key);
+    int factor = 1;
+    while (table[hash] != null) {
+      if (table[hash].getKey() == key && table[hash].getHash() == hash) {
+        return table[hash].getValue();
+      }
+      if (hash == capacity - 1) {
+        hash = 0;
+      } else {
+        hash = (int) (hash + Math.pow(factor, factor));
+        factor++;
+        hash %= capacity;
+      }
+    }
+    return null;
+  }
+
+  private Long getDoubleHashing(int key) {
     int hash1 = hash(key);
     int hash2 = hash2(key);
     while (table[hash1] != null) {
@@ -46,13 +106,28 @@ public class HashMapOpenAddressing {
   }
 
   public void put(int key, long value) {
+    put(key, value, this.type);
+  }
+
+  private void put(int key, long value, TypeOfOpenAddressing type) {
     if (size > (int) (capacity * LOAD_FACTOR)) {
       rearrange(Math.round((1 + LOAD_FACTOR) * capacity));
     }
-    add(key, value);
+    switch (type) {
+      case LINEAR_PROBING:
+        addLinearProbing(key, value);
+        break;
+      case QUADRATIC_PROBING:
+        addQuadraticProbing(key, value);
+        break;
+      case DOUBLE_HASHING:
+      default:
+        addDoubleHashing(key, value);
+        break;
+    }
   }
 
-  private void add(int key, long value) {
+  private void addDoubleHashing(int key, long value) {
     int hash1 = hash(key);
     int hash2 = hash2(key);
     while (table[hash1] != null) {
@@ -71,6 +146,44 @@ public class HashMapOpenAddressing {
     size++;
   }
 
+  private void addLinearProbing(int key, long value) {
+    int hash = hash(key);
+    while (table[hash] != null) {
+      if (table[hash].getKey() == key) {
+        table[hash].setValue(value);
+        return;
+      }
+      if (hash == capacity - 1) {
+        hash = 0;
+      } else {
+        hash++;
+        hash %= capacity;
+      }
+    }
+    table[hash] = new Entry(hash, key, value);
+    size++;
+  }
+
+  private void addQuadraticProbing(int key, long value) {
+    int hash = hash(key);
+    int factor = 1;
+    while (table[hash] != null) {
+      if (table[hash].getKey() == key) {
+        table[hash].setValue(value);
+        return;
+      }
+      if (hash == capacity - 1) {
+        hash = 0;
+      } else {
+        hash = (int) (hash + Math.pow(factor, factor));
+        factor++;
+        hash %= capacity;
+      }
+    }
+    table[hash] = new Entry(hash, key, value);
+    size++;
+  }
+
   private void rearrange(int newCap) {
     Entry[] old = table;
     table = new Entry[newCap];
@@ -78,12 +191,23 @@ public class HashMapOpenAddressing {
     this.capacity = newCap;
     for (Entry entry : old) {
       if (entry != null) {
-        add(entry.getKey(), entry.getValue());
+        switch (type) {
+          case LINEAR_PROBING:
+            addLinearProbing(entry.getKey(), entry.getValue());
+            break;
+          case QUADRATIC_PROBING:
+            addQuadraticProbing(entry.getKey(), entry.getValue());
+            break;
+          case DOUBLE_HASHING:
+          default:
+            addDoubleHashing(entry.getKey(), entry.getValue());
+            break;
+        }
       }
     }
   }
 
-  private int getPrimeFactor() {
+  private int getPrimeFactor(int capacity) {
     for (int i = capacity - 1; i >= 1; i--) {
       int fact = 0;
       for (int j = 2; j <= (int) Math.sqrt(i); j++)
@@ -102,6 +226,7 @@ public class HashMapOpenAddressing {
   private int hash2(int key) {
     return primeFactor - hash(key) % primeFactor;
   }
+
 
   @Override
   public boolean equals(Object o) {
