@@ -2,6 +2,7 @@ package com.github.fac30ff.map.hashmap.openaddressing;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import static com.github.fac30ff.map.hashmap.openaddressing.TypeOfOpenAddressing.DOUBLE_HASHING;
 
@@ -54,7 +55,7 @@ public class HashMapOpenAddressing {
     }
   }
 
-  private Long getQuadraticProbing(int key) {
+  private Long getQuadraticProbing(final int key) {
     int hash = hash(key);
     while (table[hash] != null) {
       if (table[hash].getKey() == key && table[hash].getHash() == hash) {
@@ -80,8 +81,7 @@ public class HashMapOpenAddressing {
       if (hash == capacity - 1) {
         hash = 0;
       } else {
-        hash = (int) (hash + Math.pow(factor, factor));
-        factor++;
+        hash = hash + factor * factor++;
         hash %= capacity;
       }
     }
@@ -175,8 +175,7 @@ public class HashMapOpenAddressing {
       if (hash == capacity - 1) {
         hash = 0;
       } else {
-        hash = (int) (hash + Math.pow(factor, factor));
-        factor++;
+        hash = (hash + factor * factor++);
         hash %= capacity;
       }
     }
